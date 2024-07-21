@@ -13,6 +13,7 @@ fi
 
 select var in 'Create Database' 'List Database' 'Connect Database' 'Drop Database' 'Exit'
 do
+
 case $var in
     "Create Database")
         read -p "Please enter database name: " dbname
@@ -42,62 +43,94 @@ case $var in
             do
             case $opt in
                 "Create Table")
-                read -p "Please enter table name: " tbname
-                if [ -e $tbname ]
-                then
-                    echo "Table $tbname already exist"
-                else
-                    read -p "Please enter the table columns number: " clnum
-                    pk=true
-                    datatype=""
-                    name=""
-                    case $clnum in
-                        +([0-9]))
-                            for ((i=1;i<=$clnum;i++))
-                            do
-                                pkvalue=false
-                                read -p "Please enter column name: " clname
-                                read -p "Please enter column datatype: " cldata
-                                if [ $pk = true ]
-                                then 
-                                    read -p "Is it primary key: " pkanswer
-                                    if [ $pkanswer == "y" ]
-                                    then
-                                        pk=false
-                                        pkvalue=true
-                                    fi
-                                fi
-                                if [ $pkvalue = true ]
-                                then
-                                    name+=#$clname:
-                                    datatype+=$cldata:
-                                else
-                                    name+=$clname:
-                                    datatype+=$cldata:
-                                fi
-                            done 
-                            touch $tbname
-                            (echo $datatype >> $tbname)
-                            (echo $name >> $tbname)
-                            ;;
-                        *)
-                            echo "Not valid number"
-                            ;;
-                    esac
-                fi
-                ;;
+                    read -p "Please enter table name: " tbname
+                    if [[ $tbname =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                    then
+                        if [ -e $tbname ]
+                        then
+                            echo "Table $tbname already exist"
+                        else
+                            read -p "Please enter the table columns number: " clnum
+                            pk=true
+                            datatype=""
+                            name=""
+                            case $clnum in
+                                +([0-9]))
+                                    for ((i=1;i<=$clnum;i++))
+                                    do
+                                        pkvalue=false
+                                        validCn=true
+                                        while $validCn = true
+                                        do
+                                            read -p "Please enter column name: " clname
+                                            if [[ $clname =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                                            then
+                                                validDt=true
+                                                while $validDt = true 
+                                                do
+                                                    read -p "Please enter column datatype: " cldata
+                                                    if [[ $cldata =~ [Ss][Tt][Rr][Ii][Nn][Gg] || $cldata =~ [Ii][Nn][Tt] ]]
+                                                    then
+                                                        if [ $pk = true ]
+                                                        then 
+                                                            read -p "Is it primary key: " pkanswer
+                                                            if [[ $pkanswer =~ [yY][eE][sS] || $pkanswer =~ [yY] ]]
+                                                            then
+                                                                pk=false
+                                                                pkvalue=true
+                                                            fi
+                                                        fi
+                                                        if [ $pkvalue = true ]
+                                                        then
+                                                            name+=#$clname:
+                                                        else
+                                                            name+=$clname:
+                                                        fi
+                                                        if [[ $cldata =~ [Ss][Tt][Rr][Ii][Nn][Gg] ]]
+                                                        then
+                                                            datatype+=string:
+                                                        elif [[ $cldata =~ [Ii][Nn][Tt] ]]
+                                                        then
+                                                            datatype+=int:
+                                                        fi
+                                                        validDt=false
+                                                    else
+                                                        echo "Invalid datatype"
+                                                    fi
+                                                done
+                                                validCn=false
+                                            else
+                                                echo "Invalid column name"
+                                            fi
+                                        done
+                                    done 
+                                    touch $tbname
+                                    (echo $datatype >> $tbname)
+                                    (echo $name >> $tbname)
+                                    ;;
+                                *)
+                                    echo "Not valid number"
+                                    ;;
+                            esac
+                        fi
+                    else
+                        echo "Not valid table name"
+                    fi
+                    ;;
                 "List Tables")
-                ls
-                ;;
+                    ls
+                    ;;
                 "Drop Table")
-                read -p "Please enter table name: " tbname
-                if [ -e $tbname ]
-                then
-                    rm $tbname
-                else
-                    echo "Table $tbname doesn't exist"
-                fi
-                ;;
+                    read -p "Please enter table name: " tbname
+                    if [ -e $tbname ]
+                    then
+                        rm $tbname
+                    else
+                        echo "Table $tbname doesn't exist"
+                    fi
+                    ;;
+                *)
+                    echo "Not valid command"
             esac
             done
         else
@@ -119,7 +152,7 @@ case $var in
         break
         ;;
     *)
-        echo "No Valid Choice"
+        echo "Not valid command"
         ;;
     esac
 done
