@@ -196,7 +196,7 @@ case $var in
                     read -p "Please enter table name to select from: " tbname
                     if [ -e $tbname ]
                     then
-                        select scopt in "Display Table" "Display By Columns" "Display By Row" "Exit Command"
+                     select scopt in "Display Table" "Display By Columns" "Display By Row" "Display specific columns for specific rows" "Exit Command"
                         do
                             case $scopt in
                                 "Display Table")
@@ -236,9 +236,112 @@ case $var in
                                         sed -n '2,$p' $tbname | cut -d ":" -f $field_num
                                     fi
                                         ;;
-                                # "Display By Row")
-                                #     #
-                                    # ;;
+                                "Display By Row")
+                                    clexistflag=true
+                                    clnum=""
+                                    echo $clexistflag
+                                    while $clexistflag = true
+                                    do
+                                        read -p "Enter column name for value targeting: " clname
+                                        read -p "Enter the value required: " valuerq
+                                        loops=$(awk 'BEGIN{FS=":"}{
+                                        if(NR == 2){
+                                            print NF
+                                            }
+                                        }' $tbname)
+                                        for ((i=1;i<=loops;i++))
+                                        do                                    
+                                            column=$(sed -n '2p' $tbname| cut -f $i -d ":")                                    
+                                            if [[ $clname == $column || "#$clname" == $column ]]                                    
+                                            then
+                                                clexistflag=false
+                                                clnum="$i"
+                                            fi
+                                        done
+                                        if [[ $clexistflag == "false" ]]
+                                        then
+                                            awk -v value="$valuerq" -v num="$clnum" 'BEGIN{FS=":";OFS=":"}{
+                                                    if(NR == 2){
+                                                        print $0
+                                                    }
+                                                    if(value == $num){
+                                                        print $0
+                                                    }
+                                                }'  $tbname
+                                        else
+                                            echo "$clname doesn't exist"
+                                        fi
+                                    done
+                                    ;;
+
+                                "Display specific columns for specific rows")
+
+                                    clexistflag=true
+                                    clnum=""
+                                    read -p "Enter column name for value targeting: " clname
+                                    read -p "Enter the value required: " valuerq
+                                    loops=$(awk 'BEGIN{FS=":"}{
+                                    if(NR == 2){
+                                        print NF
+                                        }
+                                    }' $tbname)
+                                    for ((i=1;i<=loops;i++))
+                                    do                                    
+                                        column=$(sed -n '2p' $tbname| cut -f $i -d ":")                                    
+                                        if [[ $clname == $column || "#$clname" == $column ]]                                    
+                                        then
+                                           clexistflag=false
+                                            clnum="$i"
+                                        fi
+                                    done
+                                    if [[ $clexistflag == "false" ]]
+                                    then
+                                        rows=$(awk -v value="$valuerq" -v num="$clnum" 'BEGIN{FS=":";OFS=":"}{
+                                                if(NR == 2){
+                                                    print $0
+                                                }
+                                                if(value == $num){
+                                                    print $0
+                                                }
+                                            }'  $tbname)
+                                    else
+                                        echo "$clname doesn't exist"
+                                        break
+                                    fi                            
+                                    echo "$rows" | tr ' ' '\n' >> temp
+                                    read -p "Please enter column names seprated by space ' ': " -a columns
+                                    arr_size=${#columns[@]}
+                                    field_num=""
+                                    loops=$(awk 'BEGIN{FS=":"}{
+                                                if(NR == 2){
+                                                    print NF
+                                                }
+                                            }' temp)
+                                    for ((j=0;j<arr_size;j++))
+                                    do
+                                        clflag=false
+                                        for ((i=1;i<=loops;i++))
+                                        do
+                                            clname=$(sed -n '1p' temp| cut -f $i -d ":")
+                                            if [[ ${columns[j]} == $clname || "#${columns[j]}" == $clname ]]
+                                            then
+                                                clflag=true
+                                                field_num+=$i","
+                                            fi
+                                        done
+                                        if [[ $clflag == "false" ]]
+                                        then
+                                            echo "${columns[j]} column doesn't exist"
+                                            break
+                                        fi
+                                    done
+                                    if [[ $clflag == "true" ]]
+                                    then
+                                        field_num=${field_num%?}
+                                        sed -n 'p' temp | cut -d ":" -f $field_num
+                                    fi
+                                    rm temp
+                                    ;;
                                 "Exit Command")
                                     break
                                     ;;
