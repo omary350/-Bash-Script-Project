@@ -256,6 +256,263 @@ case $var in
                     echo "$dbname exited"
                     break
                     ;;
+                "Update Table")
+                    read -p "please Enter table name: " ubdateTable
+                    if [[ $ubdateTable =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                    then
+                        if [[ -e $ubdateTable ]]
+                        then
+                            firstLine=$(head -n 1 $ubdateTable)
+                            secondLine=$(head -n 2 $ubdateTable | tail -n 1)
+                            declare -i numOfFields=$(echo "$firstLine" | awk -F':' '{print NF}')
+                            for(( i=1 ; i<$numOfFields ; i++ ));
+                                do
+                                    dataTypes[$i-1]=$(echo "$firstLine" | cut -d ':' -f "$i")
+                                    colsNames[$i-1]=$(echo "$secondLine" | cut -d ':' -f "$i")
+                                done
+                                            
+                            select option in "update column in table" "update row in table" "exit"
+                                do
+                                    case $option in
+                                        "update column in table")
+                                        read -p  "Enter Column name you want to change: " nameOfCol
+                                        if [[ $nameOfCol =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                                        then
+                                                    ifColExist=0
+                                                    declare -i columnIndex=0
+                                                    for(( i=1 ; i<numOfFields; i++));
+                                                    do
+                                                            if [[ $nameOfCol == ${colsNames[$i-1]} || '#'$nameOfCol == ${colsNames[$i-1]} ]]
+                                                            then
+                                                                ifColExist=1
+                                                                columnIndex=$i-1
+                                                                break
+                                                            fi
+                                                    done
+                                        
+                                                    if [[ $ifColExist -eq 1 ]]
+                                                    then
+                                                        ifColPK=0
+                                                        for(( i=1 ; i<numOfFields; i++));
+                                                            do
+                                                                if [[ '#'$nameOfCol == ${colsNames[$i-1]} ]]
+                                                                then
+                                                                    ifColPK=1 #check if column is primary key
+                                                                    break
+                                                                fi
+                                                            done
+                                                            
+                                                            if [[ ifColPK -eq 1 ]]
+                                                            then
+                                                                echo "cann't change primary key column to be same value"
+                                                            else
+                                                                read -p "enter new column value: " newColValue
+                                                                columnDataType=${dataTypes[$columnIndex]}
+                                                                if [[ $columnDataType == 'string' ]]
+                                                                then
+                                                                        if [[ $newColValue =~ ^[a-zA-Z0-9_\ ]+$ ]]
+                                                                        then 
+                                                                                fieldNum=$((columnIndex + 1))
+                                                                                awk -F':' -v newValue="$newColValue" -v colfieldNum="$fieldNum" -v OFS=':' '{
+                                                                                        # print $colfieldNum;
+                                                                                        if(NR >= 3){
+                                                                                            $colfieldNum=newValue;
+                                                                                        }
+                                                                                        print $0;
+                                                                                }' "$ubdateTable" > temp_file && mv temp_file "$ubdateTable"
+                                                                        else
+                                                                            echo "invalid input for column with string datatype"
+                                                                        fi
+                                                                elif [[ $columnDataType == 'int' ]] 
+                                                                then    
+                                                                        if [[ $newColValue =~ ^[0-9]+$ ]]
+                                                                        then
+                                                                                fieldNum=$((columnIndex + 1))
+                                                                                awk -F':' -v newValue="$newColValue" -v colfieldNum="$fieldNum" -v OFS=':' '{
+                                                                                        # print $colfieldNum;
+                                                                                        if(NR >= 3){
+                                                                                            $colfieldNum=newValue;
+                                                                                        }
+                                                                                        print $0;
+                                                                                }' "$ubdateTable" > temp_file && mv temp_file "$ubdateTable"
+                                                                        else
+                                                                            echo "invalid input for integer datatype"
+                                                                        fi
+
+                                                                fi
+                                                                
+                                                                
+                                                            fi
+                                                    else
+                                                            echo "Column dosen't exist"
+                                                    fi
+                                        else
+                                                echo "invalid column name"
+                                        fi
+                                        
+                                        ;;
+                                        "update row in table")
+                                            read -p "enter column name that you want to change it's value: " newColName
+                                            read -p "Enter the column name that determines which rows to change: " basedOnCol
+
+                                            if [[ $newColName =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ && $basedOnCol =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                                            then
+                                                    ifNewColNameExisted=0
+                                                    ifBasedOnColExist=0
+                                                    declare -i newColValueIndex=0
+                                                    declare -i basedOnColIndex=0
+                                                    for(( i=1 ; i<numOfFields; i++));
+                                                    do
+                                                            if [[ $newColName == ${colsNames[$i-1]} || '#'$newColName == ${colsNames[$i-1]} ]]
+                                                            then
+                                                                ifNewColNameExisted=1
+                                                                newColValueIndex=$i-1
+                                                            fi
+
+                                                            if [[ $basedOnCol == ${colsNames[$i-1]} || '#'$basedOnCol == ${colsNames[$i-1]} ]]
+                                                            then
+                                                                ifBasedOnColExist=1
+                                                                basedOnColIndex=$i-1
+                                                            fi
+                                                    done
+
+                                                if [[ $ifNewColNameExisted -eq 1 && $ifBasedOnColExist -eq 1 ]]
+                                                then    
+                                                        read -p "enter new value that you want to update: " newColValue
+                                                        newColValueDataType=${dataTypes[newColValueIndex]}
+                                                        validNewColValue=0
+                                                        if [[ $newColValueDataType == 'string' ]]
+                                                        then
+                                                                if [[ $newColValue =~ ^[a-zA-Z0-9_\ ]+$ ]]
+                                                                then
+                                                                    validNewColValue=1
+                                                                else
+                                                                    echo "new value input not valid for string datatype"
+                                                                    continue
+                                                                fi
+
+                                                            elif [[ $newColValueDataType == 'int'  ]]
+                                                            then
+                                                                if [[ $newColValue =~ ^[0-9]+$ ]]
+                                                                then
+                                                                    validNewColValue=1
+                                                                else
+                                                                    echo "new value input not valid for integer datatype"
+                                                                    continue
+                                                                fi
+                                                        fi
+
+                                                            read -p "enter column value that determines which row to change: " basedOnColValue
+                                                            basedOnColValueDataType=${dataTypes[basedOnColIndex]}
+                                                            validBasedOnColValue=0
+
+                                                            if [[ $basedOnColValueDataType == 'string' ]]
+                                                        then
+                                                                if [[ $basedOnColValue =~ ^[a-zA-Z0-9_\ ]+$ ]]
+                                                                then
+                                                                    validBasedOnColValue=1
+                                                                else
+                                                                    echo "basedOn value input not valid for string datatype"
+                                                                    continue
+                                                                fi
+
+                                                            elif [[ $basedOnColValueDataType == 'int'  ]]
+                                                            then
+                                                                if [[ $basedOnColValue =~ ^[0-9]+$ ]]
+                                                                then
+                                                                    validBasedOnColValue=1
+                                                                else
+                                                                    echo "basedOn value input not valid for integer datatype"
+                                                                    continue
+                                                                fi
+                                                        fi
+
+                                                        if [[ $validNewColValue -eq 1 && $validBasedOnColValue -eq 1 ]]
+                                                        then
+                                                                ifNewColNamePK=0
+                                                                for(( i=1 ; i<numOfFields; i++));
+                                                                    do
+                                                                        if [[ '#'$newColName == ${colsNames[$i-1]} ]]
+                                                                        then
+                                                                            ifNewColNamePK=1
+                                                                            break
+                                                                        fi
+                                                                    done
+
+                                                                    if [[ $ifNewColNamePK -eq 1 ]]
+                                                                    then
+                                                                            basedOnColField=$((basedOnColIndex+1))
+                                                                            ifBasedOnColOucc=$(awk -v basedOnCol="$basedOnColValue" -v filedNum="$basedOnColField" 'BEGIN{oucc = 0; FS=":"}
+                                                                                                {
+                                                                                                    if($filedNum == basedOnCol){
+                                                                                                        oucc++;
+                                                                                                    }
+                                                                                                } END{print oucc}' $ubdateTable)
+
+                                                                            if [[ $ifBasedOnColOucc -eq 1 ]]
+                                                                            then
+                                                                                    newcolValuefield=$(($newColValueIndex+1))
+                                                                                    ifnewPKValueExist=$(awk -v pkValue="$newColValue" -v filedNum="$newcolValuefield" 'BEGIN{oucc = 0; FS=":"}
+                                                                                                {
+                                                                                                    if($filedNum == pkValue){
+                                                                                                    oucc++
+                                                                                                    }
+                                                                                                } END{print oucc}' $ubdateTable)
+                                                                                    if [[ $ifnewPKValueExist -ge 1 ]]
+                                                                                    then
+                                                                                        echo "primary key value already exist"
+                                                                                    elif [[ $ifnewPKValueExist -eq 0 ]]
+                                                                                    then
+                                                                                            awk -F':' -v newValue="$newColValue" -v newColField="$newcolValuefield" -v basedOnValue="$basedOnColValue" -v basedOnField="$basedOnColField" -v OFS=':' '{
+                                                                                                if($basedOnField == basedOnValue){
+                                                                                                    $newColField = newValue
+                                                                                                }
+                                                                                                print $0
+                                                                                            }' "$ubdateTable" > temp_file && mv temp_file "$ubdateTable"
+                                                                                    fi
+                                                                            elif [[ $ifBasedOnColOucc -gt 1 ]]
+                                                                            then
+                                                                                    echo "cann't change primary key value to be same value for multiple column"
+                                                                            elif [[ $ifBasedOnColOucc -eq 0  ]]
+                                                                            then
+                                                                                echo "value that determine row doesn't exist"
+                                                                            fi
+                                                                    else 
+                                                                        newcolValuefield=$(($newColValueIndex+1))
+                                                                        basedOnColField=$((basedOnColIndex+1))
+                                                                        awk -F':' -v newValue="$newColValue" -v newColField="$newcolValuefield" -v basedOnValue="$basedOnColValue" -v basedOnField="$basedOnColField" -v OFS=':' '{
+                                                                            if($basedOnField == basedOnValue){
+                                                                                $newColField = newValue
+                                                                            }
+                                                                            print $0
+                                                                        }' "$ubdateTable" > temp_file && mv temp_file "$ubdateTable"
+                                                                    fi
+                                                        else
+                                                                echo "one or both inputs doesn't match datatype, please enter valid input"
+                                                        fi
+                                                    else
+                                                            echo "check columns one of them or both doesn't exist"
+                                                fi
+
+                                            else
+                                                echo "columns names not valid, please enter valid columns names"
+                                            fi
+                                        ;;
+                                        "exit")
+                                            break
+                                        ;;
+                                        *)
+                                            echo "invalid option"
+                                            ;;
+                                    esac
+                                done
+                        else
+                            echo "table not exist"   
+                        fi
+                    else
+                        echo "Enter Valid table name"    
+                    fi   
+                ;;
                 *)
                     echo "Not valid command"
             esac
