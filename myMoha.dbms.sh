@@ -39,7 +39,7 @@ case $var in
         if [ -e $dbname ]
         then
             cd $dbname
-            select opt in "Create Table" "List Tables" "Drop Table" "Insert into Table" "Select From Table" "Delete From Table" "Update Table" "Exit Database"
+            select opt in "Create Table" "List Tables" "Drop Table" "Insert into Table" "Select From Table" "Update Table" "Delete From Table" "Exit Database"
             do
             case $opt in
                 "Create Table")
@@ -167,7 +167,7 @@ case $var in
 
                                 if [[ $cldata = "string" ]]
                                 then
-                                    if [[ $value =~ ^[a-zA-Z0-9_\ ]+$ ]]
+                                    if [[ $value =~ ^[a-zA-Z0-9_]+$ ]]
                                     then
                                         row+=$value:
                                         validInput=false
@@ -251,11 +251,6 @@ case $var in
                         echo "Table $tbname doesn't exist"
                     fi
                     ;;
-                "Exit Database")
-                    cd ..
-                    echo "$dbname exited"
-                    break
-                    ;;
                 "Update Table")
                     read -p "please Enter table name: " ubdateTable
                     if [[ $ubdateTable =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
@@ -271,10 +266,10 @@ case $var in
                                     colsNames[$i-1]=$(echo "$secondLine" | cut -d ':' -f "$i")
                                 done
                                             
-                            select option in "update column in table" "update row in table" "exit"
+                            select option in "Update column in table" "Update row in table" "exit"
                                 do
                                     case $option in
-                                        "update column in table")
+                                        "Update column in table")
                                         read -p  "Enter Column name you want to change: " nameOfCol
                                         if [[ $nameOfCol =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
                                         then
@@ -310,7 +305,7 @@ case $var in
                                                                 columnDataType=${dataTypes[$columnIndex]}
                                                                 if [[ $columnDataType == 'string' ]]
                                                                 then
-                                                                        if [[ $newColValue =~ ^[a-zA-Z0-9_\ ]+$ ]]
+                                                                        if [[ $newColValue =~ ^[a-zA-Z0-9_]+$ ]]
                                                                         then 
                                                                                 fieldNum=$((columnIndex + 1))
                                                                                 awk -F':' -v newValue="$newColValue" -v colfieldNum="$fieldNum" -v OFS=':' '{
@@ -351,7 +346,7 @@ case $var in
                                         fi
                                         
                                         ;;
-                                        "update row in table")
+                                        "Update row in table")
                                             read -p "enter column name that you want to change it's value: " newColName
                                             read -p "Enter the column name that determines which rows to change: " basedOnCol
 
@@ -383,7 +378,7 @@ case $var in
                                                         validNewColValue=0
                                                         if [[ $newColValueDataType == 'string' ]]
                                                         then
-                                                                if [[ $newColValue =~ ^[a-zA-Z0-9_\ ]+$ ]]
+                                                                if [[ $newColValue =~ ^[a-zA-Z0-9_]+$ ]]
                                                                 then
                                                                     validNewColValue=1
                                                                 else
@@ -408,7 +403,7 @@ case $var in
 
                                                             if [[ $basedOnColValueDataType == 'string' ]]
                                                         then
-                                                                if [[ $basedOnColValue =~ ^[a-zA-Z0-9_\ ]+$ ]]
+                                                                if [[ $basedOnColValue =~ ^[a-zA-Z0-9_]+$ ]]
                                                                 then
                                                                     validBasedOnColValue=1
                                                                 else
@@ -512,9 +507,15 @@ case $var in
                     else
                         echo "Enter Valid table name"    
                     fi   
-                ;;
+                    ;;
+                "Exit Database")
+                    cd ..
+                    echo "$dbname exited"
+                    break
+                    ;;
                 *)
                     echo "Not valid command"
+                    ;;
             esac
             done
         else
