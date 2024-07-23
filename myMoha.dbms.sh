@@ -508,6 +508,259 @@ case $var in
                         echo "Enter Valid table name"    
                     fi   
                     ;;
+                "Delete From Table")
+                        read -p "please Enter table name: " deleteTable
+                        if [[ $deleteTable =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                        then
+                            if [[ -e $deleteTable ]]
+                            then
+                                firstLine=$(head -n 1 $deleteTable
+                            )
+                                secondLine=$(head -n 2 $deleteTable | tail -n 1)
+                                declare -i numOfFields=$(echo "$firstLine" | awk -F':' '{print NF}')
+                                for(( i=1 ; i<$numOfFields ; i++ ));
+                                    do
+                                        dataTypes[$i-1]=$(echo "$firstLine" | cut -d ':' -f "$i")
+                                        colsNames[$i-1]=$(echo "$secondLine" | cut -d ':' -f "$i")
+                                    done
+                                                
+                                select option in "Delete column from table" "Delete row from table" "Delete Column Value" "Delete table data" "exit"
+                                    do
+                                        case $option in
+                                            "Delete column from table")
+                                            read -p  "Enter Column name you want to delete: " nameOfCol
+                                            if [[ $nameOfCol =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                                            then
+                                                        ifColExist=0
+                                                        declare -i columnIndex=0
+                                                        for(( i=1 ; i<numOfFields; i++));
+                                                        do
+                                                                if [[ $nameOfCol == ${colsNames[$i-1]} || '#'$nameOfCol == ${colsNames[$i-1]} ]]
+                                                                then
+                                                                    ifColExist=1
+                                                                    columnIndex=$i-1
+                                                                    break
+                                                                fi
+                                                        done
+                                            
+                                                        if [[ $ifColExist -eq 1 ]]
+                                                        then
+                                                            ifColPK=0
+                                                            for(( i=1 ; i<numOfFields; i++));
+                                                                do
+                                                                    if [[ '#'$nameOfCol == ${colsNames[$i-1]} ]]
+                                                                    then
+                                                                        ifColPK=1 #check if column is primary key
+                                                                        break
+                                                                    fi
+                                                                done
+                                                                
+                                                                if [[ ifColPK -eq 1 ]]
+                                                                then
+                                                                    echo "cann't delete primary key column"
+                                                                else
+                                                                    fieldNum=$((columnIndex + 1))
+                                                                    awk -F':' -v colfieldNum="$fieldNum" -v OFS=':' '{
+                                                                        # print $colfieldNum;
+                                                                        if(NR >= 3){
+                                                                            $colfieldNum=" ";
+                                                                        }
+                                                                        print $0;
+                                                                        }' "$deleteTable" > temp_file && mv temp_file "$deleteTable"                      
+                                                                fi
+                                                        else
+                                                                echo "Column dosen't exist"
+                                                        fi
+                                            else
+                                                    echo "invalid column name"
+                                            fi
+                                            ;;
+                                            "Delete row from table")
+                                                read -p "Enter the column name that determines which row to delete: " basedOnCol
+
+                                                if [[ $basedOnCol =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                                                then                              
+                                                        ifBasedOnColExist=0
+                                                        declare -i basedOnColIndex=0
+                                                        for(( i=1 ; i<numOfFields; i++));
+                                                        do
+                                                                if [[ $basedOnCol == ${colsNames[$i-1]} || '#'$basedOnCol == ${colsNames[$i-1]} ]]
+                                                                then
+                                                                    ifBasedOnColExist=1
+                                                                    basedOnColIndex=$i-1
+                                                                fi
+                                                        done
+
+                                                    if [[ $ifBasedOnColExist -eq 1 ]]
+                                                    then    
+                                                                read -p "enter column value that determines which row to delete: " basedOnColValue
+                                                                basedOnColValueDataType=${dataTypes[basedOnColIndex]}
+                                                                validBasedOnColValue=0
+
+                                                                if [[ $basedOnColValueDataType == 'string' ]]
+                                                            then
+                                                                    if [[ $basedOnColValue =~ ^[a-zA-Z0-9_]+$ ]]
+                                                                    then
+                                                                        validBasedOnColValue=1
+                                                                    else
+                                                                        echo "basedOn value input not valid for string datatype"
+                                                                        continue
+                                                                    fi
+
+                                                                elif [[ $basedOnColValueDataType == 'int'  ]]
+                                                                then
+                                                                    if [[ $basedOnColValue =~ ^[0-9]+$ ]]
+                                                                    then
+                                                                        validBasedOnColValue=1
+                                                                    else
+                                                                        echo "basedOn value input not valid for integer datatype"
+                                                                        continue
+                                                                    fi
+                                                            fi
+
+                                                            if [[ $validBasedOnColValue -eq 1 ]]
+                                                            then
+                                                                    basedOnColField=$((basedOnColIndex+1))
+                                                                    ifBasedOnColOucc=$(awk -v basedOnCol="$basedOnColValue" -v filedNum="$basedOnColField" 'BEGIN{oucc = 0; FS=":"}
+                                                                                        {
+                                                                                            if($filedNum == basedOnCol){
+                                                                                                oucc++;
+                                                                                            }
+                                                                                        } END{print oucc}' $deleteTable
+                                                                                    )
+
+                                                                    if [[ $ifBasedOnColOucc -ge 1 ]]
+                                                                    then
+                                                                            fieldNum=$((basedOnColIndex + 1))
+                                                                            awk -F':' -v basedOnColVal="$basedOnColValue" -v colfieldNum="$fieldNum" -v OFS=':' '{
+                                                                                if(NR>=3 && $colfieldNum == basedOnColVal){
+                                                                                    next;
+                                                                                }
+                                                                                print $0;
+                                                                            }' "$deleteTable" > temp_file && mv temp_file "$deleteTable"
+                                                                    elif [[ $ifBasedOnColOucc -eq 0  ]]
+                                                                    then
+                                                                        echo "value that determine row doesn't exist"
+                                                                    fi            
+                                                            fi
+                                                        else
+                                                                echo "check column name, column doesn't exist"
+                                                    fi
+
+                                                else
+                                                    echo "column names not valid, please enter valid column name"
+                                                fi
+                                            ;;
+                                            "Delete Column Value")
+                                                read -p "enter column name that you want to delete it's value: " newColName
+                                                read -p "Enter the column name that determines which field to delete: " basedOnCol
+
+                                                if [[ $newColName =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ && $basedOnCol =~ ^[a-zA-Z_][a-zA-Z0-9_]+$ ]]
+                                                then
+                                                        ifNewColNameExisted=0
+                                                        ifBasedOnColExist=0
+                                                        declare -i newColValueIndex=0
+                                                        declare -i basedOnColIndex=0
+                                                        for(( i=1 ; i<numOfFields; i++));
+                                                        do
+                                                                if [[ $newColName == ${colsNames[$i-1]} || '#'$newColName == ${colsNames[$i-1]} ]]
+                                                                then
+                                                                    ifNewColNameExisted=1
+                                                                    newColValueIndex=$i-1
+                                                                fi
+
+                                                                if [[ $basedOnCol == ${colsNames[$i-1]} || '#'$basedOnCol == ${colsNames[$i-1]} ]]
+                                                                then
+                                                                    ifBasedOnColExist=1
+                                                                    basedOnColIndex=$i-1
+                                                                fi
+                                                        done
+
+                                                    if [[ $ifNewColNameExisted -eq 1 && $ifBasedOnColExist -eq 1 ]]
+                                                    then    
+                                                                read -p "enter column value that determines which field to delete: " basedOnColValue
+                                                                basedOnColValueDataType=${dataTypes[basedOnColIndex]}
+                                                                validBasedOnColValue=0
+
+                                                                if [[ $basedOnColValueDataType == 'string' ]]
+                                                            then
+                                                                    if [[ $basedOnColValue =~ ^[a-zA-Z0-9_]+$ ]]
+                                                                    then
+                                                                    
+                                                                        validBasedOnColValue=1
+                                                                    else
+                                                                        echo "basedOn value input not valid for string datatype"
+                                                                        continue
+                                                                    fi
+
+                                                                elif [[ $basedOnColValueDataType == 'int'  ]]
+                                                                then
+                                                                    if [[ $basedOnColValue =~ ^[0-9]+$ ]]
+                                                                    then
+                                                                        validBasedOnColValue=1
+                                                                    else
+                                                                        echo "basedOn value input not valid for integer datatype"
+                                                                        continue
+                                                                    fi
+                                                            fi
+
+                                                            if [[ $validBasedOnColValue -eq 1 ]]
+                                                            then
+                                                                    
+                                                                    ifNewColNamePK=0
+                                                                    for(( i=1 ; i<numOfFields; i++));
+                                                                        do
+                                                                            if [[ '#'$newColName == ${colsNames[$i-1]} ]]
+                                                                            then
+                                                                                ifNewColNamePK=1
+                                                                                break
+                                                                            fi
+                                                                        done
+                                                                        if [[ $ifNewColNamePK -eq 1 ]]
+                                                                        then
+                                                                                echo "cann't delete primary key value of row"
+                                                                        else 
+                                                                            newcolValuefield=$(($newColValueIndex+1))
+                                                                            basedOnColField=$((basedOnColIndex+1))
+                                                                            awk -F':' -v newColField="$newcolValuefield" -v basedOnValue="$basedOnColValue" -v basedOnField="$basedOnColField" -v OFS=':' '{
+                                                                                if(NR>=3 && $basedOnField == basedOnValue){
+                                                                                    $newColField = " "
+                                                                                }
+                                                                                print $0
+                                                                            }' "$deleteTable" > temp_file && mv temp_file "$deleteTable"
+                                                                        fi
+                                                            fi
+                                                        else
+                                                                echo "check columns one of them or both doesn't exist"
+                                                    fi
+
+                                                else
+                                                    echo "columns names not valid, please enter valid columns names"
+                                                fi
+                                            ;;
+                                            "Delete table data")
+                                                    awk '{
+                                                        print $0;
+                                                        if(NR > 1){
+                                                            exit;
+                                                        }
+                                                    }' "$deleteTable" > temp_file && mv temp_file "$deleteTable"
+                                            ;;
+                                            "exit")
+                                                break
+                                            ;;
+                                            *)
+                                                echo "invalid option"
+                                                ;;
+                                        esac
+                                    done
+                            else
+                                echo "table not exist"   
+                            fi
+                        else
+                            echo "Enter Valid table name"    
+                        fi 
+                ;;
                 "Exit Database")
                     cd ..
                     echo "$dbname exited"
