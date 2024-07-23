@@ -239,7 +239,6 @@ case $var in
                                 "Display By Row")
                                     clexistflag=true
                                     clnum=""
-                                    echo $clexistflag
                                     while $clexistflag = true
                                     do
                                         read -p "Enter column name for value targeting: " clname
