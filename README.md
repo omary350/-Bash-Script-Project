@@ -18,4 +18,4 @@ All user input goes through validation processes to check if input is meeting th
 
 To run this project you need to open terminal in project directory and type bash myMoha.dbms.sh
 
-thank you.
+thank you
