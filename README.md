@@ -1,31 +1,31 @@
-Database Management Systeem Using Bashscript
-This projejct aims to simulates the DBMS operations that most of existed DBMS do like: MySql, Microsoft Sql Server, etc...
-the DBMS in our project is cabaple of:
+This project aims to simulate the operations of a database management system (DBMS) similar to popular ones like MySQL and Microsoft SQL Server. 
 
-1- create databases as directoris. 
+Our DBMS project is capable of the following:
 
-2- drop datebase.
+1-Creating databases as directories.
 
-3- connect to database. 
+2-Dropping databases.
 
-4- list existed databases.
+3-Connecting to databases.
 
-when connecting to databases you can do most of database operations on tables like:
+4-Listing existing databases.
 
-1- create table (tables is files inside database directory).
+When connecting to databases, you can perform various operations on tables, such as:
 
-2- list tables in current database.
+1-Creating tables (where tables are represented as files inside the database directory).
 
-3- insert data in table.
+2-Listing tables in the current database.
 
-4- select data from table with multiple option for selection.
+3-Inserting data into a table.
 
-5- update table data with multiple options for updating.
+4-Selecting data from a table with multiple options for filtering.
 
-6- delete data form table with multiple options for deleteing.
+5-Updating table data with various update options.
 
-All user input goes through validation processes to check if input is meeting the DBMS requirements.
+6-Deleting data from a table using different deletion options.
 
-To run this project you need to open terminal in project directory and type bash myMoha.dbms.sh
+All user input goes through validation processes to ensure it meets the DBMS requirements.
 
-thank you
+To run this project, open the terminal in the project directory and type bash myMoha.dbms.sh.
+
+Thank you!
