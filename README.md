@@ -17,3 +17,5 @@ when connecting to databases you can do most of database operations on tables li
 All user input goes through validation processes to check if input is meeting the DBMS requirements.
 
 To run this project you need to open terminal in project directory and type bash myMoha.dbms.sh
+
+thank you.
